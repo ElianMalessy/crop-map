@@ -1,82 +1,72 @@
 'use client';
+import {useEffect, useRef, useState} from 'react';
 import {useTheme} from 'next-themes';
-import {Bar, BarChart, Line, LineChart, ResponsiveContainer, XAxis, YAxis, Tooltip} from 'recharts';
+import {Bar, BarChart, Line, LineChart, ResponsiveContainer, XAxis, YAxis, Tooltip, Label} from 'recharts';
 
-import {Card, CardContent, CardHeader, CardTitle} from '@/components/ui/card';
+import {Card, CardContent} from '@/components/ui/card';
+import {useStateStore} from '@/store/useStateStore';
+import DataTable from './DataTable';
 
-const data = [
-  {
-    price: 240,
-    yield: 1004,
-  },
-  {
-    price: 300,
-    yield: 2004,
-  },
-  {
-    price: 200,
-    yield: 944,
-  },
-  {
-    price: 278,
-    yield: 1420,
-  },
-  {
-    price: 189,
-    yield: 700,
-  },
-  {
-    price: 239,
-    yield: 1232,
-  },
-  {
-    price: 282,
-    yield: 1602,
-  },
-  {
-    price: 198,
-    yield: 904,
-  },
-];
-
-const CustomTooltip = ({active, payload, label}: any) => {
-  if (!(active && payload && payload.length)) return null;
+const CustomTooltip = ({active, payload, label, type}: any) => {
+  if (!(active && payload && payload.length && type)) return null;
   return (
     <div className='custom-tooltip'>
-      <p className='label'>{`Price : ${label}`}</p>
-      <p className='label'>{`Yield : ${payload[0].value}`}</p>
+      <p className='label'>{`Month : ${label}`}</p>
+      {type[0] === 'T' ? (
+        <>
+          <p className='label'>{`Min ${type} : ${payload[0].value}`}</p>
+          <p className='label'>{`Max ${type} : ${payload[1].value}`}</p>
+        </>
+      ) : (
+        <p className='label'>{`${type} : ${payload[0].value}`}</p>
+      )}
     </div>
   );
 };
 
-export default function Graph() {
-  const {theme} = useTheme();
-  const sortedData = data.sort((a, b) => a.price - b.price);
+const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+export default function Graph({latitude, longitude}: {latitude: number; longitude: number}) {
+  const [data, setData] = useState();
+  const dataRef: any = useRef([]);
+  useEffect(() => {
+    // if (!latitude || !longitude) return;
+    console.log('here');
 
+    fetch(`/api/crop-data?lat=${latitude}&lng=${longitude}`)
+      .then((res) => res.json())
+      .then((value: any) => {
+        const {data}: any = value;
+        for (let i = 0; i < 12; i++) {
+          dataRef.current.push({month: months[i], pr: data.pr[i], tn: data.tn[i], tx: data.tx[i]});
+        }
+        setData(dataRef.current);
+      });
+  }, [latitude, longitude]);
+
+  const {theme} = useTheme();
   return (
-    <div className='grid gap-4 sm:grid-cols-1 xl:grid-cols-2'>
-      <Card>
-        <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
-          <CardTitle className='text-base font-normal'>Yield / Price</CardTitle>
-        </CardHeader>
+    <Card className='grid grid-rows-2 grid-cols-2 grid-flow-row pt-4'>
+      <div className='h-full w-full flex items-center justify-center'>
         <CardContent>
-          <div className='text-2xl font-bold'>$15,231.89</div>
-          <p className='text-xs text-muted-foreground'>+20.1% from last month</p>
-          <div className='h-[15rem] w-[15rem]'>
+          <div className='text-2xl font-bold ml-11'>Extreme Temperatures (°C)</div>
+          <p className='text-xs text-muted-foreground ml-11'>+2.1° on average from last year </p>
+          <div className='h-[15rem] w-[40vw]'>
             <ResponsiveContainer width='100%' height='100%'>
               <LineChart
-                data={sortedData}
+                data={data}
                 margin={{
                   top: 10,
                   right: 10,
-                  left: -17,
+                  left: 10,
                   bottom: 0,
                 }}
               >
                 <Line
+                  xAxisId={'Month'}
+                  yAxisId={'Temperature (°C)'}
                   type='monotone'
                   strokeWidth={2}
-                  dataKey='yield'
+                  dataKey='tn'
                   activeDot={{
                     r: 6,
                     style: {fill: 'var(--theme-primary)', opacity: 0.25},
@@ -88,27 +78,45 @@ export default function Graph() {
                     } as React.CSSProperties
                   }
                 />
-                <Tooltip content={<CustomTooltip />} />
+                <Line
+                  xAxisId={'Month'}
+                  yAxisId={'Temperature (°C)'}
+                  type='monotone'
+                  strokeWidth={2}
+                  dataKey='tx'
+                  activeDot={{
+                    r: 6,
+                    style: {fill: 'var(--theme-secondary)', opacity: 0.25},
+                  }}
+                  style={
+                    {
+                      stroke: 'var(--theme-secondary)',
+                      '--theme-secondary': `hsl(${theme === 'dark' ? '210 40% 98%' : '222.2 47.4% 11.2%'})`,
+                    } as React.CSSProperties
+                  }
+                />
+                <Tooltip content={<CustomTooltip type={'Temperature (°C)'} />} />
 
-                <XAxis dataKey='price' />
-                <YAxis dataKey='yield' />
+                <XAxis dataKey='month' xAxisId={'Month'} />
+                <YAxis dataKey='tx' yAxisId={'Temperature (°C)'}>
+                  <Label value='Temperature (°C)' angle={-90} position={'insideBottomLeft'} offset={20} />
+                </YAxis>
               </LineChart>
             </ResponsiveContainer>
           </div>
         </CardContent>
-      </Card>
-      <Card>
-        <CardHeader className='flex flex-row items-centyield justify-between space-y-0 pb-2'>
-          <CardTitle className='text-base font-normal'>Yields</CardTitle>
-        </CardHeader>
+      </div>
+      <div className='h-full w-full flex items-center justify-center'>
         <CardContent>
-          <div className='text-2xl font-bold'>+2350</div>
-          <p className='text-xs text-muted-foreground'>+180.1% from last month</p>
-          <div className='h-[15rem] w-[15rem]'>
+          <div className='text-2xl font-bold ml-11'>Monthly Precipitation</div>
+          <p className='text-xs text-muted-foreground ml-11'>+41.7% on average from last year</p>
+          <div className='h-[15rem] w-[40vw]'>
             <ResponsiveContainer width='100%' height='100%'>
-              <BarChart data={sortedData} margin={{top: 10, right: 10, left: -17, bottom: 0}}>
+              <BarChart data={data} margin={{top: 10, right: 10, left: 10, bottom: 0}}>
                 <Bar
-                  dataKey='yield'
+                  xAxisId={'Month'}
+                  yAxisId={'Precipitation (mm)'}
+                  dataKey='pr'
                   style={
                     {
                       fill: 'var(--theme-primary)',
@@ -117,14 +125,19 @@ export default function Graph() {
                     } as React.CSSProperties
                   }
                 />
-                <Tooltip content={<CustomTooltip />} />
-                <XAxis dataKey='price' />
-                <YAxis dataKey='yield' />
+                <Tooltip content={<CustomTooltip type={'Precipitation (mm)'} />} />
+                <XAxis dataKey='month' xAxisId={'Month'} />
+                <YAxis dataKey='pr' yAxisId={'Precipitation (mm)'}>
+                  <Label value='Precipitation (mm)' angle={-90} position={'insideBottomLeft'} offset={20} />
+                </YAxis>
               </BarChart>
             </ResponsiveContainer>
           </div>
         </CardContent>
-      </Card>
-    </div>
+      </div>
+      <div className='w-full col-span-2'>
+        <DataTable data={data} />
+      </div>
+    </Card>
   );
 }

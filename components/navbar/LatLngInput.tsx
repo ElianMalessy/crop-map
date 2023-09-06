@@ -1,5 +1,4 @@
-import {useContext} from 'react';
-
+'use client';
 import {Button} from '@/components/ui/button';
 import {
   Dialog,
@@ -11,7 +10,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import {Input} from '@/components/ui/input';
-import {SetMarkerContext} from '@/app/page';
+import {useStateStore} from '@/store/useStateStore';
 
 import {Form, FormControl, FormField, FormItem, FormLabel, FormMessage} from '@/components/ui/form';
 import {useForm} from 'react-hook-form';
@@ -23,7 +22,7 @@ const formSchema = z.object({
   longitude: z.coerce.number().min(-180).max(180),
 });
 const LatLngForm = () => {
-  const {setMarkerLocations, setMarkerNumber} = useContext(SetMarkerContext);
+  const {markerLocations, setMarkerLocations, setMarkerNumber} = useStateStore((state) => state);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -34,12 +33,9 @@ const LatLngForm = () => {
   });
 
   function onSubmit(values: z.infer<typeof formSchema>) {
-    setMarkerLocations((MarkersArray: number[][]) => {
-      MarkersArray.push([values.latitude, values.longitude]);
-      console.log(MarkersArray.length);
-      setMarkerNumber(MarkersArray.length);
-      return MarkersArray;
-    });
+    markerLocations.push([values.latitude, values.longitude]);
+    setMarkerLocations(markerLocations);
+    setMarkerNumber(markerLocations.length);
   }
   return (
     <Form {...form}>

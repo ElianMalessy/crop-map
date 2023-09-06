@@ -1,5 +1,5 @@
 import L from 'leaflet';
-import * as ReactLeaflet from 'react-leaflet';
+import {MapContainer, TileLayer} from 'react-leaflet';
 import {useEffect} from 'react';
 
 import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png';
@@ -7,9 +7,7 @@ import markerIcon from 'leaflet/dist/images/marker-icon.png';
 import markerShadow from 'leaflet/dist/images/marker-shadow.png';
 import 'leaflet/dist/leaflet.css';
 
-const {MapContainer} = ReactLeaflet;
-
-function Map({children, center}: {children: any; center: number[]}) {
+function DynamicMap({children, center}: {children: any; center: number[]}) {
   useEffect(() => {
     (async function init() {
       // @ts-ignore
@@ -24,14 +22,18 @@ function Map({children, center}: {children: any; center: number[]}) {
 
   return (
     <MapContainer
-      center={(center as L.LatLngExpression) || [51, -0.09]}
+      center={(center as L.LatLngExpression) || [51, -0.1272]}
       zoom={center ? 4 : 2}
       scrollWheelZoom={true}
-      className='h-[600px] w-[600px] rounded-lg'
+      className='h-full w-full rounded-lg'
     >
-      {children(ReactLeaflet, L)}
+      <TileLayer
+        url='https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
+        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+      />
+      {children}
     </MapContainer>
   );
 }
 
-export default Map;
+export default DynamicMap;
